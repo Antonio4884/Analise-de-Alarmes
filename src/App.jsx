@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 
 export default function Home() {
@@ -26,10 +27,12 @@ export default function Home() {
 
       let grupo = "OUTROS";
 
+      // Caso exemplo: IGESE(ZXDU58...)
       const parenteses = equipamento.match(/^([A-Za-z0-9]+)\(/);
       if (parenteses) {
         grupo = parenteses[1].toUpperCase();
       } else {
+        // Caso exemplo: sg1-cdo-se
         const prefixo = equipamento.match(/^([a-zA-Z]+\d*)/);
         if (prefixo) grupo = prefixo[1].toUpperCase();
       }
@@ -70,26 +73,70 @@ export default function Home() {
     setOutput(resultado);
   }
 
+  function limpar() {
+    setInput("");
+    setOutput("");
+  }
+
   return (
-    <main style={{ padding: 30, fontFamily: "monospace" }}>
+    <main
+      style={{
+        padding: 30,
+        fontFamily: "monospace",
+        maxWidth: 1200,
+        margin: "0 auto",
+      }}
+    >
       <h1>Alarm Analyzer</h1>
 
       <textarea
         rows={20}
-        style={{ width: "100%" }}
-        placeholder="Cole alarmes aqui"
+        style={{
+          width: "100%",
+          padding: 12,
+          fontFamily: "monospace",
+          fontSize: 14,
+        }}
+        placeholder="Cole os alarmes aqui..."
         value={input}
         onChange={(e) => setInput(e.target.value)}
       />
 
-      <button
-        onClick={analisar}
-        style={{ marginTop: 20, padding: 12 }}
-      >
-        Analisar
-      </button>
+      <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
+        <button
+          onClick={analisar}
+          style={{
+            padding: 12,
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          Analisar
+        </button>
 
-      <pre style={{ whiteSpace: "pre-wrap", marginTop: 20 }}>
+        <button
+          onClick={limpar}
+          style={{
+            padding: 12,
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          Limpar
+        </button>
+      </div>
+
+      <pre
+        style={{
+          whiteSpace: "pre-wrap",
+          marginTop: 20,
+          padding: 20,
+          background: "#111",
+          color: "#00ff88",
+          borderRadius: 8,
+          overflowX: "auto",
+        }}
+      >
         {output}
       </pre>
     </main>
