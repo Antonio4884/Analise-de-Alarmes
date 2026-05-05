@@ -7,44 +7,58 @@ function gerarCarimbo(texto) {
     const textoLimpo = texto.replace(/<!--.*?-->/g, "");
 
     const partes = textoLimpo
-      .split("\t")
+      .split(/\t|\n/)
       .map((p) => p.trim())
       .filter(Boolean);
 
-    let dataHora = "";
     let equipamento = "";
+    let dataHora = "";
     let alarme = "";
     let ip = "";
+
+    const alarmesConhecidos = [
+      "DEVICE HAS STOPPED RESPONDING TO POLLS",
+      "Communication Failure",
+      "The Device is offline",
+      "Link down",
+      "Link Up",
+    ];
 
     for (const item of partes) {
       // Detecta IP
       if (/^\d{1,3}(\.\d{1,3}){3}$/.test(item)) {
         ip = item;
+        continue;
       }
 
       // Detecta data/hora
-      else if (item.includes("BRT")) {
+      if (
+        item.includes("BRT") ||
+        /\d{1,2}\sde\s.+\s\d{2}:\d{2}:\d{2}/i.test(item)
+      ) {
         dataHora = item;
+        continue;
       }
 
-      // Detecta alarmes conhecidos
-      else if (
-        item.includes("DEVICE HAS STOPPED") ||
-        item.includes("Communication Failure") ||
-        item.includes("The Device is offline")
+      // Detecta alarmes
+      if (
+        alarmesConhecidos.some((alarmeTxt) =>
+          item.toLowerCase().includes(alarmeTxt.toLowerCase())
+        )
       ) {
         alarme = item;
+        continue;
       }
 
       // Detecta equipamento
-      else if (
-        /^[A-Za-z0-9\-]+(\(.*\))?$/.test(item) &&
+      if (
+        !equipamento &&
+        item !== "No" &&
+        /^[A-Za-z0-9\-_]+(\(.*\))?$/.test(item) &&
         !item.includes("Directly Managed") &&
-        item !== "No"
+        !item.includes("EventModel")
       ) {
-        if (!equipamento) {
-          equipamento = item;
-        }
+        equipamento = item;
       }
     }
 
@@ -80,18 +94,18 @@ function analisarAlarmes(texto) {
 
     let equipamento = null;
 
-    // Formato longo: BRT -> próximo campo
+    // Formato longo: procura BRT e pega próximo campo
     const indiceBRT = partes.findIndex((p) => p.includes("BRT"));
     if (indiceBRT !== -1 && partes[indiceBRT + 1]) {
       equipamento = partes[indiceBRT + 1];
     }
 
-    // Formato resumido: No | equipamento | alarme
+    // Formato resumido
     if (!equipamento && partes.length >= 2) {
       const candidato = partes[1];
 
       if (
-        /^[A-Za-z0-9\-]+(\(.*\))?$/.test(candidato) &&
+        /^[A-Za-z0-9\-_]+(\(.*\))?$/.test(candidato) &&
         candidato !== "No"
       ) {
         equipamento = candidato;
@@ -102,7 +116,7 @@ function analisarAlarmes(texto) {
 
     let grupo = "OUTROS";
 
-    // Ex: IGESE(ZXDU58...)
+    // Ex: IGESE(ZXDU...)
     const parenteses = equipamento.match(/^([A-Za-z0-9]+)\(/);
     if (parenteses) {
       grupo = parenteses[1].toUpperCase();
