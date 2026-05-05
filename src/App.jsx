@@ -40,7 +40,7 @@ function gerarCarimbo(texto) {
         continue;
       }
 
-      // Detecta alarmes
+      // Detecta alarmes conhecidos
       if (
         alarmesConhecidos.some((alarmeTxt) =>
           item.toLowerCase().includes(alarmeTxt.toLowerCase())
@@ -64,7 +64,7 @@ function gerarCarimbo(texto) {
 
     return `.-:CARIMBO DE ABERTURA - NOC:-.
 
-Falha: ${alarme || "N/A"}
+Falha: 
 
 Equipamento: ${equipamento || "N/A"}
 
