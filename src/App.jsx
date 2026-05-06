@@ -16,14 +16,6 @@ function gerarCarimbo(texto) {
     let alarme = "";
     let ip = "";
 
-    const alarmesConhecidos = [
-      "DEVICE HAS STOPPED RESPONDING TO POLLS",
-      "Communication Failure",
-      "The Device is offline",
-      "Link down",
-      "Link Up",
-    ];
-
     for (const item of partes) {
       // Detecta IP
       if (/^\d{1,3}(\.\d{1,3}){3}$/.test(item)) {
@@ -40,35 +32,49 @@ function gerarCarimbo(texto) {
         continue;
       }
 
-      // Detecta alarmes conhecidos
+      // Detecta equipamento
       if (
-        alarmesConhecidos.some((alarmeTxt) =>
-          item.toLowerCase().includes(alarmeTxt.toLowerCase())
+        !equipamento &&
+        /^[A-Za-z0-9\-_]+$/.test(item) &&
+        item !== "No" &&
+        !item.includes("Directly") &&
+        !item.includes("Managed") &&
+        !item.includes("Net-SNMP") &&
+        !item.includes("Linux") &&
+        !item.includes("svlx")
+      ) {
+        equipamento = item;
+        continue;
+      }
+
+      // Detecta alarmes diversos
+      if (
+        !alarme &&
+        (
+          item.toLowerCase().includes("falha") ||
+          item.toLowerCase().includes("failure") ||
+          item.toLowerCase().includes("alarm") ||
+          item.toLowerCase().includes("link") ||
+          item.toLowerCase().includes("offline")
         )
       ) {
         alarme = item;
         continue;
       }
-
-      // Detecta equipamento
-      if (
-        !equipamento &&
-        item !== "No" &&
-        /^[A-Za-z0-9\-_]+(\(.*\))?$/.test(item) &&
-        !item.includes("Directly Managed") &&
-        !item.includes("EventModel")
-      ) {
-        equipamento = item;
-      }
     }
+
+    // Decodifica unicode tipo \u00e1
+    const alarmeDecodificado = alarme
+      ? JSON.parse(`"${alarme.replace(/"/g, '\\"')}"`)
+      : "N/A";
 
     return `.-:CARIMBO DE ABERTURA - NOC:-.
 
-Falha: 
+Falha:
 
 Equipamento: ${equipamento || "N/A"}
 
-Alarme: ${alarme || "N/A"}
+Alarme: ${alarmeDecodificado || "N/A"}
 
 Data/Hora: ${dataHora || "N/A"}
 
@@ -94,13 +100,11 @@ function analisarAlarmes(texto) {
 
     let equipamento = null;
 
-    // Formato longo: procura BRT e pega próximo campo
     const indiceBRT = partes.findIndex((p) => p.includes("BRT"));
     if (indiceBRT !== -1 && partes[indiceBRT + 1]) {
       equipamento = partes[indiceBRT + 1];
     }
 
-    // Formato resumido
     if (!equipamento && partes.length >= 2) {
       const candidato = partes[1];
 
@@ -116,12 +120,10 @@ function analisarAlarmes(texto) {
 
     let grupo = "OUTROS";
 
-    // Ex: IGESE(ZXDU...)
     const parenteses = equipamento.match(/^([A-Za-z0-9]+)\(/);
     if (parenteses) {
       grupo = parenteses[1].toUpperCase();
     } else {
-      // Ex: sg1-cdo-se
       const prefixo = equipamento.match(/^([a-zA-Z]+\d*)/);
       if (prefixo) grupo = prefixo[1].toUpperCase();
     }
